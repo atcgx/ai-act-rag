@@ -1,0 +1,29 @@
+# Environment
+.env
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Data — download manually per README
+data/ai_act.html
+
+# Qdrant index — regenerated via `uv run python -m src.ingest`
+qdrant_data/
+
+# macOS
+.DS_Store
+
+# Editor
+.idea/
+.vscode/
+*.swp
