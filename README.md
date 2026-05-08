@@ -60,7 +60,7 @@ The defaults are fully local (no keys required). Fill in `.env` only if you want
 
 ## Downloading the AI Act HTML
 
-EUR-Lex blocks automated downloads. Download the file manually:
+EUR-Lex blocks automated downloads — this is a known limitation and the only manual step in the setup. Download the file manually:
 
 1. Open in your browser: <https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689>
 2. Wait for the full page to load (you should see Article 1, Article 2… scrolling down)
