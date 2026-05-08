@@ -3,7 +3,7 @@ from src.config import OLLAMA_HOST, GEMINI_API_KEY, ANTHROPIC_API_KEY
 
 class OllamaGenerator:
     name = "ollama-gemma2"
-    data_sharing_ok = True
+    is_local = True
 
     def __init__(self, model: str = "gemma2:9b"):
         import ollama
@@ -30,7 +30,7 @@ class OllamaGemma4Generator(OllamaGenerator):
 
 class GeminiGenerator:
     name = "gemini-2.0-flash-lite"
-    data_sharing_ok = False
+    is_local = False
 
     def __init__(self, model: str = "models/gemini-2.0-flash-lite"):
         if not GEMINI_API_KEY:
@@ -51,7 +51,7 @@ class GeminiGenerator:
 
 class AnthropicGenerator:
     name = "claude-sonnet"
-    data_sharing_ok = True
+    is_local = False
 
     def __init__(self, model: str = "claude-sonnet-4-5"):
         if not ANTHROPIC_API_KEY:

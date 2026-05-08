@@ -126,24 +126,20 @@ with st.sidebar:
         index=list(EMBEDDER_REGISTRY.keys()).index(DEFAULT_EMBEDDER),
     )
 
-    sensitive = st.toggle(
+    local_only = st.toggle(
         "I will use sensitive data",
         value=False,
-        help="Hides cloud generators that may use prompts for model training.",
+        help="When enabled, only local generators are shown. Cloud APIs (Gemini, Claude) send prompts to external servers — do not use them with patient data or unpublished trial data.",
     )
 
     available_generators = {
         k: v for k, v in GENERATOR_REGISTRY.items()
-        if not sensitive or v.data_sharing_ok
+        if not local_only or v.is_local
     }
-    if sensitive and len(available_generators) < len(GENERATOR_REGISTRY):
-        st.warning(
-            "Free-tier cloud APIs (e.g. Gemini free tier) are hidden because they "
-            "may use your prompts for model training. Remaining options are local "
-            "or paid APIs that do not train on your data."
-        )
+    if local_only and len(available_generators) < len(GENERATOR_REGISTRY):
+        st.info("Cloud generators hidden. Inference runs locally — no data leaves the machine.")
 
-    default_gen = DEFAULT_GENERATOR if DEFAULT_GENERATOR in available_generators else list(available_generators)[0]
+    default_gen = DEFAULT_GENERATOR if DEFAULT_GENERATOR in available_generators else next(iter(available_generators))
     generator_name = st.selectbox(
         "Generator",
         options=list(available_generators.keys()),

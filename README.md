@@ -84,7 +84,7 @@ The UI opens at http://localhost:8501. Re-indexing is only needed when you switc
 
 - **Fully local by default.** `local-bge-m3` + `ollama-gemma2` run entirely on your machine. No data leaves the laptop. No API keys required.
 - **Generator recommendation.** `ollama-gemma4` (gemma4:e4b) follows the system prompt more reliably than `ollama-gemma2` on nuanced compliance questions. Use it if you have ~10GB free.
-- **Sensitive data toggle.** Hides generators that may use prompts for model training (free Gemini tier). Do not use those with patient data or unpublished clinical data.
+- **Sensitive data toggle.** Hides cloud generators (Gemini, Claude) and restricts to local models only. Use this when working with patient data or unpublished trial data — no prompts leave the machine.
 - **Sources panel.** Every answer shows retrieved article excerpts with scores plus the lexbeam structured output. This is the most important UI element — it lets you verify every claim against the primary source.
 - **Off-topic refusal.** If the top retrieval score is below 0.55, the app stops before generation, surfaces a warning, and asks the user to ask about the AI Act. This stops the model from hallucinating answers to unrelated questions like "what's the solar system?"
 - **This is informational tooling, not legal advice.** Every answer ends with this disclaimer.
