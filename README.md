@@ -1,6 +1,6 @@
 # EU AI Act RAG Demo
 
-A minimal RAG demo over the EU Artificial Intelligence Act (Regulation (EU) 2024/1689) for pharma IT executives. Every answer cites the specific article or annex point it draws from. Swap between local and cloud embedders and generators at runtime.
+A minimal RAG demo over the EU Artificial Intelligence Act (Regulation (EU) 2024/1689) for pharma IT, regulatory affairs, and compliance teams. Every answer cites the specific article or annex point it draws from. Swap between local and cloud embedders and generators at runtime.
 
 Each query combines two sources:
 - **Semantic retrieval** from a local Qdrant index over the full AI Act text (auditable, citable)
@@ -18,23 +18,31 @@ Each query combines two sources:
 
 ## Prerequisites
 
-- **Python 3.11+** managed by [`uv`](https://docs.astral.sh/uv/):
+- **Python 3.11+** and [`uv`](https://docs.astral.sh/uv/) — `uv` manages the Python version automatically.
   ```bash
-  # macOS/Linux
-  curl -LsSf https://astral.sh/uv/install.sh | sh
-
-  # Windows
-  powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+  curl -LsSf https://astral.sh/uv/install.sh | sh  # macOS/Linux
+  winget install astral-sh.uv                       # Windows
   ```
+  Or download from [astral.sh/uv](https://astral.sh/uv).
 
-- **Node.js 18+** (for the lexbeam MCP, fetched automatically via `npx` on first query):
-  Install from [https://nodejs.org](https://nodejs.org)
+- **Node.js 18+** — required to run the lexbeam MCP server, which the app launches via `npx`.
+  ```bash
+  brew install node        # macOS
+  winget install OpenJS.NodeJS  # Windows
+  sudo apt install nodejs  # Ubuntu/Debian
+  ```
+  Or download from [nodejs.org](https://nodejs.org).
 
 - **Ollama** (only needed for local generation — the default):
-  Install from [https://ollama.com](https://ollama.com), then:
   ```bash
-  ollama pull gemma2:9b       # default (7B, ~5GB)
-  ollama pull gemma4:e4b      # better instruction following, recommended (~10GB)
+  brew install ollama                        # macOS
+  winget install Ollama.Ollama               # Windows
+  curl -fsSL https://ollama.com/install.sh | sh  # Linux
+  ```
+  Or download from [ollama.com](https://ollama.com). Then pull a model:
+  ```bash
+  ollama pull gemma2:9b       # default (~5GB)
+  ollama pull gemma4:e4b      # better instruction following (~10GB)
   ```
 
 ---
@@ -43,12 +51,12 @@ Each query combines two sources:
 
 ```bash
 uv sync                     # creates .venv and installs all dependencies
-cp .env.example .env        # fill in API keys only for providers you intend to use
+cp .env.example .env        # add API keys only for the providers in use
 ```
 
 ### Optional: API keys
 
-The defaults are fully local (no keys required). Fill in `.env` only if you want cloud providers:
+The defaults are fully local — no keys required. Add keys to `.env` only when using cloud providers:
 
 | Key | Provider | When needed |
 |-----|----------|-------------|
@@ -65,7 +73,7 @@ EUR-Lex blocks automated downloads — this is a known limitation and the only m
 1. Open in your browser: <https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=OJ:L_202401689>
 2. Wait for the full page to load (you should see Article 1, Article 2… scrolling down)
 3. **Right-click → Save Page As → Webpage, HTML Only**
-4. Save as `data/ai_act.html` in the project root — the file should be ~3–4 MB
+4. Save as `data/ai_act.html` in the project root
 
 ---
 
@@ -82,49 +90,64 @@ The UI opens at http://localhost:8501. Re-indexing is only needed when you switc
 
 ## Usage notes
 
-- **Fully local by default.** `local-bge-m3` + `ollama-gemma2` run entirely on your machine. No data leaves the laptop. No API keys required.
-- **Generator recommendation.** `ollama-gemma4` (gemma4:e4b) follows the system prompt more reliably than `ollama-gemma2` on nuanced compliance questions. Use it if you have ~10GB free.
+- **Fully local by default.** `local-bge-m3` + `ollama-gemma2` run entirely on the machine. No data leaves, no API keys required.
+- **Generator recommendation.** `ollama-gemma4` (gemma4:e4b) follows the system prompt more reliably than `ollama-gemma2` on nuanced compliance questions. Requires ~10GB free disk space.
 - **Sensitive data toggle.** Hides cloud generators (Gemini, Claude) and restricts to local models only. Use this when working with patient data or unpublished trial data — no prompts leave the machine.
-- **Sources panel.** Every answer shows retrieved article excerpts with scores plus the lexbeam structured output. This is the most important UI element — it lets you verify every claim against the primary source.
-- **Off-topic refusal.** If the top retrieval score is below 0.55, the app stops before generation, surfaces a warning, and asks the user to ask about the AI Act. This stops the model from hallucinating answers to unrelated questions like "what's the solar system?"
+- **Sources panel.** Every answer shows retrieved article excerpts with scores plus the lexbeam structured output. This is the most important UI element — every claim is traceable to the primary source.
+- **Off-topic refusal.** If the top retrieval score is below 0.55, the app stops before generation and surfaces a warning. Prevents the model from hallucinating answers to unrelated questions.
 - **This is informational tooling, not legal advice.** Every answer ends with this disclaimer.
 
 ---
 
 ## Architecture
 
+Each query runs two parallel lookups before generation:
+
+1. **lexbeam MCP** (`npx`, stdio) — deterministic structured lookup: risk classification, applicable obligations, phased deadlines.
+2. **Qdrant** (embedded, file-backed, no Docker) — top-5 chunks by semantic similarity over the full AI Act text. Dense vector search only; Qdrant supports hybrid BM25+dense fusion but it's out of scope here.
+
+Both outputs are injected into the prompt. The generator (local or cloud) produces a cited answer; the UI surfaces the raw sources alongside it so every claim can be verified against the primary text.
+
+**Indexing pipeline** (run once, or when switching embedders):
+
 ```
-user question
-    ├── lexbeam MCP (npx)  →  structured classification + deadlines
-    └── Qdrant (local)     →  top-5 article chunks by semantic similarity
-            ↓
-    Generator (local or cloud)
-            ↓
-    cited answer + sources panel
+data/ai_act.html  →  src/parse.py  →  Chunk[]  →  src/embedders.py  →  Qdrant collection
 ```
 
-- **`src/config.py`** — paths, API keys, and runtime defaults
-- **`src/embedders.py`** — all embedder classes and registry in one file
-- **`src/generators.py`** — all generator classes and registry in one file
-- **`src/lex_client.py`** — synchronous wrapper around the lexbeam MCP stdio server
-- **`src/parse.py`** — EUR-Lex HTML → `Chunk[]` (one per article, one per Annex III point)
-- **`src/ingest.py`** — parse → embed → upsert to Qdrant
-- **`src/retrieve.py`** — embed query → Qdrant search → ranked chunks
-- **`src/prompts.py`** — system prompt (citation contract, pharma framing) + user prompt builder
-- **Qdrant** — embedded mode, file-backed in `qdrant_data/`, no Docker. Dense vector search only (no hybrid/BM25) — Qdrant supports sparse + dense fusion, but it's out of scope for this demo.
+**Query pipeline** (every question):
+
+```
+question  →  src/embedders.py  →  src/retrieve.py  (Qdrant top-5)
+          →  src/lex_client.py (lexbeam MCP)
+                     ↓
+             src/prompts.py  →  Generator  →  cited answer + sources panel
+```
+
+**Module map:**
+
+| File | Role |
+|------|------|
+| `src/config.py` | Paths, API keys, runtime defaults |
+| `src/parse.py` | EUR-Lex HTML → `Chunk[]` (one per article, one per Annex III point) |
+| `src/ingest.py` | Parse → embed → upsert to Qdrant |
+| `src/embedders.py` | All embedder classes and registry |
+| `src/retrieve.py` | Embed query → Qdrant search → ranked chunks |
+| `src/lex_client.py` | Sync wrapper around the lexbeam MCP stdio server |
+| `src/generators.py` | All generator classes and registry |
+| `src/prompts.py` | System prompt (citation contract, pharma framing) + user prompt builder |
 
 ---
 
 
 ## Developing further: adding pharma regulatory frameworks
 
-The AI Act doesn't sit in a vacuum — pharma already has GMP Annex 11, ICH Q9, MDR, IVDR, and GAMP 5. A useful production tool needs to surface answers that cite *both* the AI Act *and* the relevant pharma framework, so a regulatory affairs team can defend the answer in front of an inspector.
+Pharma operates under GMP Annex 11, ICH Q9, MDR, IVDR, and GAMP 5 — frameworks that already govern most of what the AI Act now formalises. A production tool needs to answer against both, so a regulatory affairs team gets a single cited response they can put in front of an inspector.
 
 There are two architectural paths for this. They're not mutually exclusive; the right choice per framework depends on what's available.
 
 ### Path A — extend the Qdrant corpus
 
-Index each framework as a new Qdrant collection alongside `ai_act__*`. Same pattern as the AI Act today: parse the source document into chunks, embed with each registered embedder, and `retrieve_multi()` queries all collections and merges results by score.
+Index each framework as a new Qdrant collection alongside `ai_act__*`. Parse the source document into chunks, embed with each registered embedder, and extend `retrieve.py` to query all collections and merge results by score.
 
 | Framework | Format | Availability | Notes |
 |-----------|--------|-------------|-------|
@@ -153,19 +176,19 @@ def retrieve_multi(query, embedder, collections, top_k=5):
 
 The system prompt gains one rule: cite the framework alongside the clause (e.g. `[GMP Annex 11, clause 4.2]`), and explicitly draw cross-framework connections when the same obligation appears in multiple sources.
 
-**Use this path when:** you need full source text in the answer for auditability, and the document is open or licensed for indexing.
+**When to use:** the document is open or licensed for indexing and full clause text is required in the answer for auditability.
 
 ### Path B — add another MCP
 
 If a deterministic MCP exists for a framework (the way `lexbeam-software/eu-ai-act-mcp` does for the AI Act), wire it in the same way as `src/lex_client.py`: a thin sync wrapper, called between retrieval and generation, output formatted into the prompt.
 
-This is much cheaper to integrate (no parser, no chunking, no re-indexing) but gives you only what the MCP exposes — usually classifications, deadlines, and FAQ-style summaries, not full clause text. As of 2026 there's no widely-adopted GMP Annex 11 or ICH Q9 MCP — but the architecture is ready for one when it appears, and you could write your own thin MCP server over a Qdrant collection if you want both.
+No parser, no chunking, no re-indexing — but the output is limited to what the MCP exposes: classifications, deadlines, structured summaries. No GMP Annex 11 or ICH Q9 MCP exists yet; when one does, wiring it in is a thin wrapper. A custom MCP server over a Qdrant collection is also an option to get both.
 
-**Use this path when:** the framework has a maintained MCP exposing structured tools, and full source text isn't required in the answer.
+**When to use:** a maintained MCP exists for the framework and structured output is sufficient — full clause text is not needed in the answer.
 
-### What this unlocks
+### What this enables
 
-A question like "how does the AI Act risk management requirement compare to what we already do under ICH Q9?" becomes answerable with actual cited text from both frameworks — not model inference. That's the difference between a demo and a tool a regulatory affairs team would actually use in an inspection prep.
+Cross-framework questions — "how does AI Act Article 9 map to ICH Q9 risk management?" — become answerable with cited text from both sources. That's the bar for a regulatory affairs team preparing for an inspection.
 
 ---
 
