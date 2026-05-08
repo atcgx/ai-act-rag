@@ -1,6 +1,6 @@
 # EU AI Act RAG Demo
 
-A minimal retrieval-augmented generation (RAG) demo over the EU Artificial Intelligence Act (Regulation (EU) 2024/1689), built for pharma IT executives. Swap between local and cloud embedders and generators at runtime. Every answer cites specific articles or annex points — built to be defensible in front of an auditor or board, not just impressive.
+A minimal RAG demo over the EU Artificial Intelligence Act (Regulation (EU) 2024/1689) for pharma IT executives. Every answer cites the specific article or annex point it draws from. Swap between local and cloud embedders and generators at runtime.
 
 Each query combines two sources:
 - **Semantic retrieval** from a local Qdrant index over the full AI Act text (auditable, citable)
@@ -10,9 +10,9 @@ Each query combines two sources:
 
 ## Screenshots
 
-![Compliance question with structured classification and cited sources](docs/app1.png)
+![Compliance question with structured classification and cited sources](docs/app-screen01.png)
 
-![Off-topic refusal — low retrieval confidence hard-stop](docs/app2.png)
+![Off-topic refusal — low retrieval confidence hard-stop](docs/app-screen02.png)
 
 ---
 
@@ -103,6 +103,7 @@ user question
     cited answer + sources panel
 ```
 
+- **`src/config.py`** — paths, API keys, and runtime defaults
 - **`src/embedders.py`** — all embedder classes and registry in one file
 - **`src/generators.py`** — all generator classes and registry in one file
 - **`src/lex_client.py`** — synchronous wrapper around the lexbeam MCP stdio server
@@ -173,7 +174,7 @@ A question like "how does the AI Act risk management requirement compare to what
 On corporate-locked machines:
 
 ```bash
-uv pip compile pyproject.toml > requirements.txt
+uv export --format requirements-txt > requirements.txt
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```

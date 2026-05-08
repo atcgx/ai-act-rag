@@ -20,7 +20,7 @@ st.markdown("""
 <style>
     /* Header — fixed, dark navy, title baked in via pseudo-element */
     header[data-testid="stHeader"] {
-        background-color: #1d3461;
+        background: linear-gradient(90deg, #1d3461 0%, #009eb5 60%, #3d9142 100%);
         position: fixed !important;
         top: 0; left: 0; right: 0;
         z-index: 999;
