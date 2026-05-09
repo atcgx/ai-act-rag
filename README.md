@@ -171,9 +171,9 @@ The shape of the extension:
 
 ```mermaid
 flowchart LR
-    A[AI Act HTML] --> PA[parse.py: ai_act parser]
-    G[GMP Annex 11] --> PG[parse.py: annex11 parser]
-    I[ICH Q9 PDF] --> PI[parse.py: ich_q9 parser]
+    A[AI Act HTML] --> PA[parsers/ai_act.py]
+    G[GMP Annex 11] --> PG[parsers/gmp_annex_11.py]
+    I[ICH Q9 PDF] --> PI[parsers/ich_q9.py]
     PA --> EMB[Embedder]
     PG --> EMB
     PI --> EMB
@@ -186,7 +186,7 @@ flowchart LR
     RET --> M[Merge by score → top-k]
 ```
 
-Each framework adds one parser and one collection. `retrieve_multi` queries all collections and merges by score.
+Each framework adds one parser file under `src/parsers/` and one Qdrant collection. `ingest.py` maps a `--corpus` flag to the right parser. `retrieve_multi` queries all collections and merges by score.
 
 The system prompt gains one rule: cite the framework alongside the clause (e.g. `[GMP Annex 11, clause 4.2]`) and draw cross-framework connections when the same obligation appears in multiple sources.
 

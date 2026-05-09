@@ -105,7 +105,7 @@ The set of controls that turn the tool into something a regulated organisation c
 - **Audit trail** as part of the request path. Each record contains user identity, question, retrieved chunk IDs and scores, structured-lookup output, full prompts, generator and model identifier, model and index version, generated answer, latency, any policy decision (cloud denied, fallback invoked). Append-only, tamper-evident, shipped to retention-managed storage.
 - **PHI guardrails** at the boundary. Input scrubbing (NER-based detection of patient identifiers, pseudonymisation when reference is needed), output redaction (block any identifier not in the scrubbed input), retrieval-time access control (chunks tagged with sensitivity, user role determines accessible classifications).
 - **Identity** via OIDC / SAML at the edge. Audit gains real user attribution; role drives default corpus mix and accessible sensitivity classifications.
-- **Corpus versioning.** Every ingestion produces a versioned index; old versions retained per retention policy. The audit log records which version answered each query. Plural corpora (each framework as its own collection) follows naturally — routing layer decides which collections a question hits.
+- **Corpus versioning.** Every ingestion produces a versioned index; old versions retained per retention policy. The audit log records which version answered each query. Plural corpora (each framework as its own Qdrant collection, with one parser per framework under `src/parsers/`) follows naturally — a routing layer decides which collections a question hits.
 
 ### Retrieval quality
 
