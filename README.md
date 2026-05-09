@@ -110,17 +110,25 @@ Both outputs are injected into the prompt. The generator (local or cloud) produc
 
 **Indexing pipeline** (run once, or when switching embedders):
 
-```
-data/ai_act.html  →  src/parse.py  →  Chunk[]  →  src/embedders.py  →  Qdrant collection
+```mermaid
+flowchart LR
+    H[data/ai_act.html] --> PA[parse.py]
+    PA --> C[Chunk array]
+    C --> EMB[embedders.py]
+    EMB --> QC[Qdrant collection]
 ```
 
 **Query pipeline** (every question):
 
-```
-question  →  src/embedders.py  →  src/retrieve.py  (Qdrant top-5)
-          →  src/lex_client.py (lexbeam MCP)
-                     ↓
-             src/prompts.py  →  Generator  →  cited answer + sources panel
+```mermaid
+flowchart LR
+    Q[Question] --> EMB[Embedder]
+    EMB --> RET[Qdrant retrieval]
+    Q --> MCP[Lexbeam MCP]
+    RET --> PR[Prompt builder]
+    MCP --> PR
+    PR --> GEN[Generator]
+    GEN --> ANS[Cited answer + Sources]
 ```
 
 **Module map:**
