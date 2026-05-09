@@ -29,7 +29,7 @@ Each query combines two sources:
   ```bash
   brew install node        # macOS
   winget install OpenJS.NodeJS  # Windows
-  sudo apt install nodejs  # Ubuntu/Debian
+  sudo apt install nodejs       # Linux
   ```
   Or download from [nodejs.org](https://nodejs.org).
 
