@@ -61,7 +61,7 @@ The defaults are fully local — no keys required. Add keys to `.env` only when 
 | Key | Provider | When needed |
 |-----|----------|-------------|
 | `ANTHROPIC_API_KEY` | Claude Sonnet (Anthropic) | Generator: `claude-sonnet` |
-| `GEMINI_API_KEY` | Gemini + Gemini Embedding (Google) | Generator: `gemini-*` or Embedder: `gemini-embedding` |
+| `GEMINI_API_KEY` | Gemini + Gemini Embedding (Google) | Generator: `gemini-2.0-flash-lite` or Embedder: `gemini-embedding` |
 | `VOYAGE_API_KEY` | Voyage embeddings | Embedder: `voyage-lite` |
 
 ---
@@ -135,6 +135,8 @@ question  →  src/embedders.py  →  src/retrieve.py  (Qdrant top-5)
 | `src/lex_client.py` | Sync wrapper around the lexbeam MCP stdio server |
 | `src/generators.py` | All generator classes and registry |
 | `src/prompts.py` | System prompt (citation contract, pharma framing) + user prompt builder |
+
+For the full architecture analysis — including pharma regulatory constraints, deployment topology options, and the layered evolution path from demo to production — see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
