@@ -167,24 +167,28 @@ Index each framework as a new Qdrant collection alongside `ai_act__*`. Parse the
 | IVDR 2017/746 key articles | HTML | Free — EUR-Lex | Relevant for diagnostic AI |
 | GAMP 5 (2nd ed.) | PDF | ISPE members only, cannot redistribute | Skip for any open demo |
 
-Implementation, sketched:
+The shape of the extension:
 
-```python
-# src/parse.py — add parsers per framework, returning the same Chunk shape
-# src/ingest.py — accept --corpus flag, choose parser by name
-# src/retrieve.py — search multiple collections in parallel, merge by score
-def retrieve_multi(query, embedder, collections, top_k=5):
-    client = QdrantClient(path=str(QDRANT_PATH))
-    vector = embedder.embed([query])[0]
-    hits = []
-    for collection in collections:
-        for hit in client.query_points(collection_name=collection, query=vector, limit=top_k).points:
-            hits.append((hit, hit.score, collection))
-    hits.sort(key=lambda x: x[1], reverse=True)
-    return hits[:top_k]
+```mermaid
+flowchart LR
+    A[AI Act HTML] --> PA[parse.py: ai_act parser]
+    G[GMP Annex 11] --> PG[parse.py: annex11 parser]
+    I[ICH Q9 PDF] --> PI[parse.py: ich_q9 parser]
+    PA --> EMB[Embedder]
+    PG --> EMB
+    PI --> EMB
+    EMB --> CA[(ai_act collection)]
+    EMB --> CG[(gmp_annex_11 collection)]
+    EMB --> CI[(ich_q9 collection)]
+    CA --> RET[retrieve_multi]
+    CG --> RET
+    CI --> RET
+    RET --> M[Merge by score → top-k]
 ```
 
-The system prompt gains one rule: cite the framework alongside the clause (e.g. `[GMP Annex 11, clause 4.2]`), and explicitly draw cross-framework connections when the same obligation appears in multiple sources.
+Each framework adds one parser and one collection. `retrieve_multi` queries all collections and merges by score.
+
+The system prompt gains one rule: cite the framework alongside the clause (e.g. `[GMP Annex 11, clause 4.2]`) and draw cross-framework connections when the same obligation appears in multiple sources.
 
 **When to use:** the document is open or licensed for indexing and full clause text is required in the answer for auditability.
 
