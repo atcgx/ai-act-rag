@@ -153,7 +153,7 @@ For the full architecture analysis — including pharma regulatory constraints, 
 
 Pharma operates under GMP Annex 11, ICH Q9, MDR, IVDR, and GAMP 5 — frameworks that already govern most of what the AI Act now formalises. A production tool needs to answer against both, so a regulatory affairs team gets a single cited response they can put in front of an inspector.
 
-There are two architectural paths for this. They're not mutually exclusive; the right choice per framework depends on what's available.
+There are two architectural paths for this, not mutually exclusive. Use Path A when full clause text is required in the answer and the document is open for indexing; use Path B when a maintained MCP exists and structured output (classifications, deadlines) is sufficient.
 
 ### Path A — extend the Qdrant corpus
 
@@ -190,28 +190,27 @@ Each framework adds one parser file under `src/parsers/` and one Qdrant collecti
 
 The system prompt gains one rule: cite the framework alongside the clause (e.g. `[GMP Annex 11, clause 4.2]`) and draw cross-framework connections when the same obligation appears in multiple sources.
 
-**When to use:** the document is open or licensed for indexing and full clause text is required in the answer for auditability.
-
 ### Path B — add another MCP
 
-If a deterministic MCP exists for a framework (the way `lexbeam-software/eu-ai-act-mcp` does for the AI Act), wire it in the same way as `src/lex_client.py`: a thin sync wrapper, called between retrieval and generation, output formatted into the prompt.
+When a maintained MCP exists for a framework (as `lexbeam-software/eu-ai-act-mcp` does for the AI Act), it slots in alongside the existing one — same shape as `src/lex_client.py`, output merged into the prompt with the retrieved chunks.
 
-No parser, no chunking, no re-indexing — but the output is limited to what the MCP exposes: classifications, deadlines, structured summaries. No GMP Annex 11 or ICH Q9 MCP exists yet; when one does, wiring it in is a thin wrapper. A custom MCP server over a Qdrant collection is also an option to get both.
+```mermaid
+flowchart LR
+    Q[Question] --> EMB[Embedder]
+    EMB --> RET[Qdrant retrieval]
+    Q --> M1[lexbeam MCP<br/>EU AI Act]
+    Q --> M2[Other MCP<br/>e.g. MDR]
+    RET --> PR[Prompt builder]
+    M1 --> PR
+    M2 --> PR
+    PR --> GEN[Generator]
+```
 
-**When to use:** a maintained MCP exists for the framework and structured output is sufficient — full clause text is not needed in the answer.
+Cost: no parser, no chunking, no re-indexing — one wrapper file per MCP. Limit: the answer is bounded by what the MCP exposes (classifications, deadlines, structured summaries), not full clause text.
+
+As of 2026 there is no maintained MCP for GMP Annex 11, ICH Q9, MDR, or IVDR. Path A is the only option for those today. Where both clause text and structured output are needed for the same framework, a custom MCP can be built on top of a Qdrant collection — combining the two paths.
 
 ### What this enables
 
-Cross-framework questions — "how does AI Act Article 9 map to ICH Q9 risk management?" — become answerable with cited text from both sources. That's the bar for a regulatory affairs team preparing for an inspection.
+A question like *"how does AI Act Article 9 align with ICH Q9 risk management?"* today gets the AI Act side cited and the ICH Q9 side from model knowledge. With multi-corpus retrieval, both sides are grounded in primary text — usable in inspection prep, where every claim needs a source the auditor can open.
 
----
-
-## Fallback if `uv` is not available
-
-On corporate-locked machines:
-
-```bash
-uv export --format requirements-txt > requirements.txt
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-```
